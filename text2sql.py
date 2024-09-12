@@ -44,20 +44,6 @@ def execute_sql_query(query):
 
 
 
-
-def present_output_to_user(outputType,outputData):
-    global prompt_response,result
-    if(outputType=='table'):
-        prompt_response={'type':'table','data':result}
-    else:
-        prompt_response={'type':'text','data':outputData}
-
-
-
-
-
-
-
 tables_info='''
 
 table name : employees
@@ -113,32 +99,6 @@ execute_sql_function = {
 
 
 
-present_output =  {
-        "name": "present_output",
-        "description": "Present output data in suiable format to the user",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "outputType": {
-                    "type": "string",
-                    "enum": ["table", 'string'],
-                    "description": "The type of output format that is suitable "
-                },
-                "outputData": {
-                    "type": "string",
-                    "description": "A string representation of the data to be presented"
-                }
-            },
-            "required": ["outputType", "outputData"]
-        }
-    }
-
-
-
-
-
-
-
 assistant = client.beta.assistants.create(
     name="text to sql bot",
     instructions=f'''You are a SQL expert. Given an input question, create a syntactically correct mySQL query to run and return ONLY the generated Query and nothing else. Unless otherwise specified, do not return more than 50 rows.
@@ -160,25 +120,20 @@ assistant = client.beta.assistants.create(
                     if a correct SQL query is generated then the execute_sql_query function must be called with the sql statemet as a parameter,
                     if the returned result is an error or exception fix the error by rebuilding the query and call the execute_sql_query function.
                     for a successful execution True is returned as result.
-                    
-                    the present_output function must be called on every message.
-                    on successful execution of SQL query the present_output function must be called with outputType table and outputData must be sql result
-                    if query cannot be generated or if the question asked does not follow the instructions the presnt_output function must be called with
-                    outputType as text and the outputData must be a short message saying letting the user know that the request cannot be completed  do not include table names columnsnames and technical details in messages.
-                    on generation of output True will be returned as a response to present_output function.
 
-
-                    the output is generated for a end user let the message be non technical. you can only reveal you identity as a data Analysis ai.
+                    the output is generated for a end user let the message be non technical. you can only reveal you identity as a data Analysis ai an you help in fetching and getting insights from data.
 
       ''',
     model="gpt-4o-mini",
-    tools=[{"type": "function", "function": execute_sql_function},{"type":"function","function":present_output}]
+    tools=[{"type": "function", "function": execute_sql_function}]
 )
 
 # Create a thread
 thread = client.beta.threads.create()
 
 def chat_with_assistant(user_input):
+    query_status=None
+    query_result=None
     # Add a message to the thread
     client.beta.threads.messages.create(
         thread_id=thread.id,
@@ -214,45 +169,31 @@ def chat_with_assistant(user_input):
                 #submiting the query execution error or success to tool call
                 if tool_call.function.name=='execute_sql_query':
                     query=json.loads(tool_call.function.arguments)['query']
-                    global result,result_status
-                    result,result_status=execute_sql_query(query)
+                    query_result,query_status=execute_sql_query(query)
                     client.beta.threads.runs.submit_tool_outputs(
                         thread_id=thread.id,
                         run_id=run.id,
                         tool_outputs=[{
                             'tool_call_id':tool_call.id,
-                            'output':str(result_status)
+                            'output':str(query_status)
                             }])
-                
-                elif tool_call.function.name=='present_output':
-                    args=json.loads(tool_call.function.arguments)
-                    outputType=args['outputType']
-                    outputData=args['outputData']
-                    present_output_to_user(outputType,outputData)
-                    client.beta.threads.runs.submit_tool_outputs(
-                        thread_id=thread.id,
-                        run_id=run.id,
-                        tool_outputs=[{
-                            'tool_call_id':tool_call.id,
-                            'output':'True'
-
-                        }])
-
-    # Retrieve the messages  for debugging
+        
+    response={'messages':[]}
+    if query_status==True:
+        response['messages'].append({'type':'table','data':query_result})
     
+    # Retrieve the messages  for debugging
     messages = client.beta.threads.messages.list(thread_id=thread.id)
     if messages.data and (len(messages.data) > 0):
-        print('message',messages.data[0].content[0].text.value)
+        bot_response=messages.data[0].content[0].text.value
+        response['messages'].append({'type':'text','data':bot_response})
     
 
     # Return the assistant's response
     #return messages.data[0].content[0].text.value
-    return prompt_response
+    return response
 
-result=''
-result_status=''
 
-prompt_response=''
 
 
 
@@ -287,7 +228,7 @@ class Prompt(BaseModel):
 
 @app.get("/")
 async def read_root():
-    return FileResponse('index.html')
+    return FileResponse('./index.html')
 
 
 @app.post("/sendPrompt")

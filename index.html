@@ -154,7 +154,7 @@ tr:hover {
 <body>
 
 <div class="main">
-    <p class="logo">Data Ananysis Ai</p>
+    <p class="logo">Data Analysis Ai</p>
     <div class="history round" id="history"></div>
     
     <div class="inputBox round">
@@ -203,62 +203,71 @@ tr:hover {
         body:JSON.stringify(data),
 
     }).then(response=>response.json())
-    .then((data)=>{
-        handleResponse(data);
+    .then((response)=>{
+        handleResponse(response);
     }).catch((err)=>{
-        handleResponse({type:'text',data:err});
+        console.log(err);
     });
 
 
 }
 
 
-function handleResponse(data){
+function handleResponse(response){
     inputform.disabled=false;
     historybox.removeChild(historybox.lastChild)
 
-    if (data.type=='text'){
-        resp=document.createElement('p');
-        resp.className='chat received'
-        resp.textContent=data.data;        
-        historybox.appendChild(resp)
+
+
+    for (let message of response.messages){
+        console.log(message)
+        if (message.type=='text'){
+            resp=document.createElement('p');
+            resp.className='chat received'
+            resp.textContent=message.data;        
+            historybox.appendChild(resp)
+        }
+        else if (message.type=='table'){
+            displayTable(message.data)
+        }   
 
     }
-    else if (data.type=='table'){
-        table=document.createElement('table');
-        table.className='chat received'
-        table_data=data.data;
-        console.log('table data')
-        console.log(table_data)
-        firstrow=document.createElement('tr')
-        for (let column of table_data.columns){
+}
 
-            th=document.createElement('th')
-            th.innerHTML=column
-            firstrow.appendChild(th)
 
-        }
-        table.appendChild(firstrow)
+function displayTable(tableData){
 
-        for(let rows of table_data.rows){
-            tr=document.createElement('tr')
-            for (let cell_data of rows){
-                td=document.createElement('td')
-                td.innerHTML=cell_data
-                tr.appendChild(td)
-            }
-            table.appendChild(tr)
+    table=document.createElement('table');
+    table.className='chat received'
+    firstrow=document.createElement('tr')
 
-            
-        }
-        chatblock=document.createElement('div');
-        chatblock.className='chat received chatblock';
-        chatblock.appendChild(table)
-        historybox.appendChild(chatblock)
+    for (let column of tableData.columns){
+
+        th=document.createElement('th')
+        th.innerHTML=column
+        firstrow.appendChild(th)
 
     }
+    table.appendChild(firstrow)
+
+    for(let rows of tableData.rows){
+        tr=document.createElement('tr')
+        for (let cell_data of rows){
+            td=document.createElement('td')
+            td.innerHTML=cell_data
+            tr.appendChild(td)
+        }
+        table.appendChild(tr)
+
+        
+    }
+    chatblock=document.createElement('div');
+    chatblock.className='chat received chatblock';
+    chatblock.appendChild(table)
+    historybox.appendChild(chatblock)
 
 }
+
 
 
 
