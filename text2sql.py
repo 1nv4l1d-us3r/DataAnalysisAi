@@ -101,7 +101,7 @@ execute_sql_function = {
 
 assistant = client.beta.assistants.create(
     name="text to sql bot",
-    instructions=f'''You are a SQL expert. Given an input question, create a syntactically correct mySQL query to run and return ONLY the generated Query and nothing else. Unless otherwise specified, do not return more than 50 rows.
+    instructions=f'''You are a SQL expert. Given an input question, create a syntactically correct mySQL query to run and return ONLY the generated Query and nothing else. 
                     the details of tables is as follows {tables_info}.
                     
                     for correct query generation you must follow these instructions.
@@ -112,16 +112,18 @@ assistant = client.beta.assistants.create(
                     if the question asks very few details include a few relevant fields or information appropriately.
                     if any of the questions voilate the instructions return a short user friendly message . i am a data analysis ai i cannot help you with that task try asking something else.
                     only the sql statement must be returned without any comments and annotations.
-                    use dynamic values for current date
+                    use dynamic values for current date.
+                    Unless explicitly specified do not include more than 15 rows while fetching data.
                     use user friendly aliases for the column names
                     create queries using the tables information prvided to fulfill the questions asked.
                     you can use all information to answer the queries
+                    to answer the questions asked by user sql query must be created and execute_sql_query function must be called.
 
                     if a correct SQL query is generated then the execute_sql_query function must be called with the sql statemet as a parameter,
-                    if the returned result is an error or exception fix the error by rebuilding the query and call the execute_sql_query function.
+                    if the returned result is an error or exception fix the error by rebuilding the query and call the execute_sql_query function again.
                     for a successful execution True is returned as result.
-
-                    after the sql query execution an output is generated for a end user summarizing the details . you can only reveal you identity as a data Analysis ai an you help in fetching and getting insights from data.
+     
+                    after the sql query executed  an output is generated for a end user summarizing the details . you can only reveal you identity as a data Analysis ai an you help in fetching and getting insights from data.
 
       ''',
     model="gpt-4o-mini",
@@ -228,7 +230,7 @@ class Prompt(BaseModel):
 
 @app.get("/")
 async def read_root():
-    return FileResponse('./index.html')
+    return FileResponse('./index3.html')
 
 
 @app.post("/sendPrompt")
