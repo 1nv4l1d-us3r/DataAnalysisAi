@@ -63,14 +63,18 @@ tr:hover {
 
     .history{
         padding:20px;
+        margin:5px;
         background-color: white;
+        max-width:80%;
+        min-width: 60%;
         width:80%;
-        height:70%;
+       
         overflow-y: auto;
         display: flex;
         flex-direction: column; 
         align-items: start;
         box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+
     }
     .inputBox{
         background-color:rgb(201, 198, 198);
@@ -129,21 +133,40 @@ tr:hover {
         align-self: flex-start;
         margin:5px 10%;
         font-size: 2.5em;
+        
 
     }
 
-    .chatblock{
-        border-radius: 0;
-        max-width:80%;
-        height: 50%;
-        overflow-x: auto;
-
-    }
-    .chatblock {
+.chatblock{
+    border-radius: 0;
+    max-width:80%;
+    height: 50%;
     overflow-x: auto;
-    max-width: 100%;
-    padding: 5px;
+
 }
+.chatblock {
+overflow-x: auto;
+max-width: 100%;
+padding: 5px;
+}
+
+.content{
+
+    display:flex;
+    justify-content: center;
+    height:80%;
+    width:100%;
+
+}
+
+.tableSection{
+    max-width: 40%;
+    min-width: 30%;
+    width:30%;
+    display:none;
+
+}
+
 
 
 </style>
@@ -155,7 +178,13 @@ tr:hover {
 
 <div class="main">
     <p class="logo">Data Analysis Ai</p>
-    <div class="history round" id="history"></div>
+    
+    <div class="content">
+        <div class="history round" id="history"></div>
+        <div class="tableSection history round" id="tableSection"></div>
+
+    </div>
+    
     
     <div class="inputBox round">
         <form id="promptForm" onsubmit=sendPrompt(event)>
@@ -172,6 +201,7 @@ tr:hover {
   historybox=document.getElementById('history')
   inp=document.getElementById('promptInput')
   inputform=document.getElementById('promptForm')
+  tablesection=document.getElementById('tableSection')
   storedTables=[]
   inp.focus()
 
@@ -212,6 +242,10 @@ tr:hover {
 
 }
 
+function emptyTableSection(){
+    tablesection.innerHTML=''
+    tableSection.style.display='none'
+}
 
 function handleResponse(response){
     inputform.disabled=false;
@@ -243,6 +277,7 @@ function handleResponse(response){
         else if (message.type=='table'){
             storedTables.push(message.data)
             console.log('all tables',storedTables)
+            emptyTableSection()
             displayTable(message.data)
         }   
 
@@ -251,8 +286,11 @@ function handleResponse(response){
 
 
 function displayTable(tableData){
+    emptyTableSection()
+    tableSection.style.display='block'
+    
 
-    table=document.createElement('table');
+    let table=document.createElement('table');
     table.className='chat received'
     firstrow=document.createElement('tr')
 
@@ -264,6 +302,7 @@ function displayTable(tableData){
 
     }
     table.appendChild(firstrow)
+    tablesection.appendChild(table)
 
     for(let rows of tableData.rows){
         tr=document.createElement('tr')
@@ -276,10 +315,7 @@ function displayTable(tableData){
 
         
     }
-    chatblock=document.createElement('div');
-    chatblock.className='chat received chatblock';
-    chatblock.appendChild(table)
-    historybox.appendChild(chatblock)
+    
 
 }
 
