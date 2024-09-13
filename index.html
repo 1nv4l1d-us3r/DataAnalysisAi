@@ -172,7 +172,7 @@ tr:hover {
   historybox=document.getElementById('history')
   inp=document.getElementById('promptInput')
   inputform=document.getElementById('promptForm')
-
+  storedTables=[]
   inp.focus()
 
   function sendPrompt(){
@@ -216,7 +216,8 @@ tr:hover {
 function handleResponse(response){
     inputform.disabled=false;
     historybox.removeChild(historybox.lastChild)
-
+    responseHasTable=response.messages.some((res)=>res.type=='table')
+    let currentTableIndex=storedTables.length
 
 
     for (let message of response.messages){
@@ -224,10 +225,24 @@ function handleResponse(response){
         if (message.type=='text'){
             resp=document.createElement('p');
             resp.className='chat received'
-            resp.textContent=message.data;        
+            resp.textContent=message.data;
+            if(responseHasTable){
+                attachment=document.createElement('button');
+                attachment.textContent='Attached Table';
+                attachment.className='attachment';
+                attachment.tableIndex=currentTableIndex
+                attachment.onclick=function (){
+                    console.log(this)
+                    displayTable(storedTables[this.tableIndex])
+                }
+                resp.appendChild(attachment)
+
+            }        
             historybox.appendChild(resp)
         }
         else if (message.type=='table'){
+            storedTables.push(message.data)
+            console.log('all tables',storedTables)
             displayTable(message.data)
         }   
 

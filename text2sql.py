@@ -121,7 +121,7 @@ assistant = client.beta.assistants.create(
                     if the returned result is an error or exception fix the error by rebuilding the query and call the execute_sql_query function.
                     for a successful execution True is returned as result.
 
-                    the output is generated for a end user let the message be non technical. you can only reveal you identity as a data Analysis ai an you help in fetching and getting insights from data.
+                    after the sql query execution an output is generated for a end user summarizing the details . you can only reveal you identity as a data Analysis ai an you help in fetching and getting insights from data.
 
       ''',
     model="gpt-4o-mini",
