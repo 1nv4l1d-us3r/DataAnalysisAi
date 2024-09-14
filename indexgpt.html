@@ -196,7 +196,8 @@
         }
         .attachment p{
             margin:0 5px;
-            font-size:1.125em
+            font-size:1.125em;
+            line-height:0.7rem;
         }
 
         .attachment svg {
@@ -370,12 +371,12 @@
                     currentArtifactIndex=storedTables.length-1
                     emptyTableSection();
                     message.data.title='Artifact '+storedTables.length
-                    displayTable(message.data);
+                    displayTable(message.data,100);
                 }
             }
         }
 
-        function displayTable(tableData) {
+        function displayTable(tableData,delay) {
             emptyTableSection();
             tablesection.style.display = 'flex';
             content.classList.add('table-visible');
@@ -383,6 +384,8 @@
             const table = document.createElement('table');
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
+            tableTitle.textContent=tableData.title
+            tablecontent.appendChild(table);
 
             for (let column of tableData.columns) {
                 const th = document.createElement('th');
@@ -393,18 +396,27 @@
             table.appendChild(thead);
 
             const tbody = document.createElement('tbody');
-            for (let row of tableData.rows) {
-                const tr = document.createElement('tr');
-                for (let cellData of row) {
-                    const td = document.createElement('td');
-                    td.textContent = cellData;
-                    tr.appendChild(td);
-                }
-                tbody.appendChild(tr);
-            }
             table.appendChild(tbody);
-            tableTitle.textContent=tableData.title
-            tablecontent.appendChild(table);
+          
+            
+            if (!delay){
+                let delay=100
+            }
+            
+
+            tableData.rows.forEach((row, index) => {
+                setTimeout(() => {
+                    const tr = document.createElement('tr');
+                    for (let cellData of row) {
+                        const td = document.createElement('td');
+                        td.textContent = cellData;
+                        tr.appendChild(td);
+                    }
+                    tbody.appendChild(tr);
+                }, index * delay);
+            });
+
+            
 
         }   
 
