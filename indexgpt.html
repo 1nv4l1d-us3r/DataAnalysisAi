@@ -64,11 +64,37 @@
             background-color: #ffffff;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            overflow-y: auto;
             width: 45%;
             position: relative;
             display: none;
             height: calc(100vh - 160px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tableHeader {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            height: 60px;
+            box-sizing: border-box;
+        }
+
+        .tableContent {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .tableFooter {
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
+            font-weight: bold;
+            text-align: center;
+            height: 60px;
+            box-sizing: border-box;
         }
 
         .chat {
@@ -179,9 +205,6 @@
         }
 
         .closeBtn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
             background-color: #edf2f7;
             border: none;
             border-radius: 50%;
@@ -192,7 +215,6 @@
             align-items: center;
             cursor: pointer;
             font-size: 1.25rem;
-            z-index: 2;
             transition: background-color 0.3s ease;
         }
 
@@ -235,7 +257,11 @@
                 </div>
             </div>
             <div class="tableSection" id="tableSection">
-                <button class="closeBtn" onclick="emptyTableSection()">&times;</button>
+                <div class="tableHeader">
+                    <button class="closeBtn" onclick="emptyTableSection()">&times;</button>
+                </div>
+                <div class="tableContent" id="tableContent"></div>
+                <div class="tableFooter" id="tableFooter"></div>
             </div>
         </div>
     </div>
@@ -245,6 +271,8 @@
         const inp = document.getElementById('promptInput');
         const inputform = document.getElementById('promptForm');
         const tablesection = document.getElementById('tableSection');
+        const tablecontent = document.getElementById('tableContent');
+        const tablefooter = document.getElementById('tableFooter');
         const content = document.getElementById('content');
         let storedTables = [];
         inp.focus();
@@ -287,7 +315,8 @@
         }
 
         function emptyTableSection() {
-            tablesection.innerHTML = '<button class="closeBtn" onclick="emptyTableSection()">&times;</button>';
+            tablecontent.innerHTML = '';
+            tablefooter.innerHTML = '';
             tablesection.style.display = 'none';
             content.classList.remove('table-visible');
         }
@@ -330,14 +359,8 @@
 
         function displayTable(tableData) {
             emptyTableSection();
-            tablesection.style.display = 'block';
+            tablesection.style.display = 'flex';
             content.classList.add('table-visible');
-
-            if (tableData.title) {
-                const title = document.createElement('h3');
-                title.textContent = tableData.title;
-                tablesection.appendChild(title);
-            }
 
             const table = document.createElement('table');
             const thead = document.createElement('thead');
@@ -363,7 +386,8 @@
             }
             table.appendChild(tbody);
 
-            tablesection.appendChild(table);
+            tablecontent.appendChild(table);
+            tablefooter.textContent = tableData.title || 'Attached Table';
         }
     </script>
 </body>
