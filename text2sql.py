@@ -236,6 +236,16 @@ async def read_root():
     return FileResponse('./indexgpt.html')
 
 
+@app.get("/newConversation")
+async def new_conversation():
+    print('creating new Thread')
+    global thread
+    client.beta.threads.delete(thread_id=thread.id)
+    thread = client.beta.threads.create()    
+    return 'ok'
+
+
+
 @app.post("/sendPrompt")
 async def send_prompt(request: Request ):
     try:
