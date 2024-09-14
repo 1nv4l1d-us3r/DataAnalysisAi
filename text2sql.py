@@ -125,6 +125,8 @@ assistant = client.beta.assistants.create(
                     for a successful execution True is returned as result.
      
                     after the sql query executed  an output is generated for a end user summarizing the details . you can only reveal you identity as a data Analysis ai an you help in fetching and getting insights from data.
+                    
+                    if the response to question has points and lists format the text example using  bullet points.
 
       ''',
     model="gpt-4o-mini",
