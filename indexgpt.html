@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinOps Analyzer</title>
+    <style>
+        body {
+            font-family: 'Inter', 'Söhne', 'Helvetica', 'Arial', sans-serif;
+            background-color: #f0f4f8;
+            color: #2d3748;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: #4a5568;
+            text-align: center;
+        }
+
+        .content {
+            display: flex;
+            flex-grow: 1;
+            gap: 2rem;
+            overflow: hidden;
+        }
+
+        .history, .tableSection {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            flex-basis: 50%;
+            max-width: 50%;
+        }
+
+        .history {
+            padding: 1.5rem;
+        }
+
+        .tableSection {
+            position: relative;
+            display: none;
+            max-height: calc(100vh - 12rem);
+        }
+
+        .chat {
+            background-color: #edf2f7;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            max-width: 80%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .chat.sent {
+            align-self: flex-end;
+            background-color: #ebf8ff;
+        }
+
+        .chat.received {
+            align-self: flex-start;
+        }
+
+        .inputBox {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 2rem auto 0;
+            display: flex;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 65%;
+        }
+
+        #promptForm {
+            display: flex;
+            width: 100%;
+        }
+
+        #promptInput {
+            flex-grow: 1;
+            border: none;
+            font-size: 1rem;
+            padding: 0.75rem 1rem;
+            background-color: #edf2f7;
+            border-radius: 8px;
+        }
+
+        #promptInput:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #63b3ed;
+        }
+
+        #promptBtn {
+            background-color: #4299e1;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.75rem 1rem;
+            margin-left: 0.5rem;
+            color: #ffffff;
+            transition: background-color 0.3s ease;
+        }
+
+        #promptBtn:hover {
+            background-color: #3182ce;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background-color: #ffffff;
+            z-index: 1;
+        }
+
+        th {
+            background-color: #edf2f7;
+            font-weight: 600;
+        }
+
+        .attachment {
+            display: inline-flex;
+            align-items: center;
+            background-color: #edf2f7;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            margin-top: 0.75rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .attachment:hover {
+            background-color: #e2e8f0;
+        }
+
+        .attachment svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 0.5rem;
+        }
+
+        .closeBtn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: #edf2f7;
+            border: none;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.25rem;
+            z-index: 2;
+            transition: background-color 0.3s ease;
+        }
+
+        .closeBtn:hover {
+            background-color: #e2e8f0;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+
+            .history, .tableSection {
+                flex-basis: 100%;
+                max-width: 100%;
+            }
+
+            .inputBox {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main">
+        <p class="logo">FinOps Analyzer</p>
+        
+        <div class="content">
+            <div class="history" id="history"></div>
+            <div class="tableSection" id="tableSection">
+                <button class="closeBtn" onclick="emptyTableSection()">&times;</button>
+            </div>
+        </div>
+        
+        <div class="inputBox">
+            <form id="promptForm" onsubmit="sendPrompt(event)">
+                <input id="promptInput" placeholder="Enter a prompt here">
+                <button id="promptBtn" type="submit">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 11L12 6L17 11M12 18V7" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // The JavaScript code remains unchanged
+        const historybox = document.getElementById('history');
+        const inp = document.getElementById('promptInput');
+        const inputform = document.getElementById('promptForm');
+        const tablesection = document.getElementById('tableSection');
+        let storedTables = [];
+        inp.focus();
+
+        function sendPrompt(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            inputform.disabled = true;
+            
+            const inputdata = inp.value;
+            if (inputdata === '') return;
+            inp.value = '';
+            
+            const entered_prompt = document.createElement('p');
+            entered_prompt.textContent = inputdata;
+            entered_prompt.className = 'chat sent';
+            
+            const wait_message = document.createElement('p');
+            wait_message.textContent = 'Waiting for response... ';
+            wait_message.className = 'chat received';
+            
+            historybox.appendChild(entered_prompt);
+            historybox.appendChild(wait_message);
+            historybox.scrollTop = historybox.scrollHeight;
+            
+            let url = '/sendPrompt';
+            let data = { prompt: inputdata };
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            }).then(response => response.json())
+            .then((response) => {
+                handleResponse(response);
+            }).catch((err) => {
+                console.log(err);
+            });
+        }
+
+        function emptyTableSection() {
+            tablesection.innerHTML = '<button class="closeBtn" onclick="emptyTableSection()">&times;</button>';
+            tablesection.style.display = 'none';
+        }
+
+        function handleResponse(response) {
+            inputform.disabled = false;
+            historybox.removeChild(historybox.lastChild);
+            const responseHasTable = response.messages.some((res) => res.type === 'table');
+            let currentTableIndex = storedTables.length;
+
+            for (let message of response.messages) {
+                if (message.type === 'text') {
+                    const resp = document.createElement('p');
+                    resp.className = 'chat received';
+                    resp.textContent = message.data;
+                    if (responseHasTable) {
+                        const attachment = document.createElement('button');
+                        attachment.className = 'attachment';
+                        attachment.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                            </svg>
+                            <span>Attached Table ${currentTableIndex + 1}</span>
+                        `;
+                        attachment.onclick = function() {
+                            const tableContents = storedTables[currentTableIndex];
+                            tableContents.title = 'Table ' + (currentTableIndex + 1);
+                            displayTable(tableContents);
+                        };
+                        resp.appendChild(attachment);
+                    }
+                    historybox.appendChild(resp);
+                } else if (message.type === 'table') {
+                    storedTables.push(message.data);
+                    emptyTableSection();
+                    displayTable(message.data);
+                }
+            }
+        }
+
+        function displayTable(tableData) {
+            emptyTableSection();
+            tablesection.style.display = 'block';
+
+            if (tableData.title) {
+                const title = document.createElement('h3');
+                title.textContent = tableData.title;
+                tablesection.appendChild(title);
+            }
+
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+
+            for (let column of tableData.columns) {
+                const th = document.createElement('th');
+                th.textContent = column;
+                headerRow.appendChild(th);
+            }
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            for (let row of tableData.rows) {
+                const tr = document.createElement('tr');
+                for (let cellData of row) {
+                    const td = document.createElement('td');
+                    td.textContent = cellData;
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            }
+            table.appendChild(tbody);
+
+            tablesection.appendChild(table);
+        }
+    </script>
+</body>
+</html>
