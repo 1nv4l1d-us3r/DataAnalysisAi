@@ -35,25 +35,40 @@
             flex-grow: 1;
             gap: 2rem;
             overflow: hidden;
+            justify-content: center;
         }
 
-        .history, .tableSection {
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            width: 60%;
+            transition: width 0.3s ease;
+        }
+
+        .content.table-visible .left-column {
+            width: 45%;
+        }
+
+        .history {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            flex-grow: 1;
+            margin-bottom: 1rem;
+            height: calc(100vh - 280px);
+        }
+
+        .tableSection {
             background-color: #ffffff;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             overflow-y: auto;
-            flex-basis: 50%;
-            max-width: 50%;
-        }
-
-        .history {
-            padding: 1.5rem;
-        }
-
-        .tableSection {
+            width: 45%;
             position: relative;
             display: none;
-            max-height: calc(100vh - 12rem);
+            height: calc(100vh - 160px);
         }
 
         .chat {
@@ -78,10 +93,9 @@
             background-color: #ffffff;
             border-radius: 12px;
             padding: 1rem;
-            margin: 2rem auto 0;
             display: flex;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 65%;
+            height: 60px;
         }
 
         #promptForm {
@@ -186,18 +200,18 @@
             background-color: #e2e8f0;
         }
 
-        @media (max-width: 768px) {
-            .content {
+        @media (max-width: 1200px) {
+            .content, .content.table-visible {
                 flex-direction: column;
+                align-items: center;
+            }
+
+            .left-column, .content.table-visible .left-column, .tableSection {
+                width: 100%;
             }
 
             .history, .tableSection {
-                flex-basis: 100%;
-                max-width: 100%;
-            }
-
-            .inputBox {
-                width: 100%;
+                height: calc(50vh - 100px);
             }
         }
     </style>
@@ -206,31 +220,32 @@
     <div class="main">
         <p class="logo">FinOps Analyzer</p>
         
-        <div class="content">
-            <div class="history" id="history"></div>
+        <div class="content" id="content">
+            <div class="left-column">
+                <div class="history" id="history"></div>
+                <div class="inputBox">
+                    <form id="promptForm" onsubmit="sendPrompt(event)">
+                        <input id="promptInput" placeholder="Enter a prompt here">
+                        <button id="promptBtn" type="submit">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 11L12 6L17 11M12 18V7" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
             <div class="tableSection" id="tableSection">
                 <button class="closeBtn" onclick="emptyTableSection()">&times;</button>
             </div>
         </div>
-        
-        <div class="inputBox">
-            <form id="promptForm" onsubmit="sendPrompt(event)">
-                <input id="promptInput" placeholder="Enter a prompt here">
-                <button id="promptBtn" type="submit">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7 11L12 6L17 11M12 18V7" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
-            </form>
-        </div>
     </div>
 
     <script>
-        // The JavaScript code remains unchanged
         const historybox = document.getElementById('history');
         const inp = document.getElementById('promptInput');
         const inputform = document.getElementById('promptForm');
         const tablesection = document.getElementById('tableSection');
+        const content = document.getElementById('content');
         let storedTables = [];
         inp.focus();
 
@@ -274,6 +289,7 @@
         function emptyTableSection() {
             tablesection.innerHTML = '<button class="closeBtn" onclick="emptyTableSection()">&times;</button>';
             tablesection.style.display = 'none';
+            content.classList.remove('table-visible');
         }
 
         function handleResponse(response) {
@@ -315,6 +331,7 @@
         function displayTable(tableData) {
             emptyTableSection();
             tablesection.style.display = 'block';
+            content.classList.add('table-visible');
 
             if (tableData.title) {
                 const title = document.createElement('h3');

@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Query, Form,Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
+import sys
 # Initialize the OpenAI client
 api_key=os.environ.get('OPENAI_API_KEY')
 client = OpenAI(api_key=api_key)
@@ -230,7 +231,7 @@ class Prompt(BaseModel):
 
 @app.get("/")
 async def read_root():
-    return FileResponse('./index3.html')
+    return FileResponse('./indexgpt.html')
 
 
 @app.post("/sendPrompt")
@@ -241,6 +242,12 @@ async def send_prompt(request: Request ):
         
         # Access the 'prompt' key directly
         prompt = body.get("prompt")
+
+        if len(sys.argv)>1:
+            text={'type':'text','data':'Here is the information that you asked'}
+            table={"type":"table","data":{"columns":["Name","Age","City","Occupation","Salary"],"rows":[["John Doe",28,"New York","Engineer",70000],["Jane Smith",34,"Los Angeles","Designer",85000],["Michael Brown",42,"Chicago","Manager",95000],["Emily Davis",29,"Houston","Developer",72000],["David Wilson",37,"Miami","Consultant",88000],["Sarah Johnson",31,"San Francisco","Architect",93000],["Chris Lee",45,"Seattle","Scientist",100000],["Jessica Taylor",26,"Boston","Data Analyst",68000],["James Martin",40,"Denver","Lawyer",110000],["Laura Garcia",33,"Phoenix","Doctor",120000]]}}
+        
+            return {'messages':[text,table]}
         
         response=chat_with_assistant(prompt)
 
