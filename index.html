@@ -133,7 +133,7 @@ tr:hover {
         align-self: flex-start;
         margin:5px 10%;
         font-size: 2.5em;
-        margin-bottom: 0;
+       
         
 
     }
@@ -231,11 +231,9 @@ padding: 5px;
     entered_prompt=document.createElement('p');
     entered_prompt.textContent=inputdata;
     entered_prompt.className='chat sent';
-    wait_message=document.createElement('p')
-    wait_message.textContent='Waiting for response... '
-    wait_message.className='chat received'
+  
     historybox.appendChild(entered_prompt)
-    historybox.appendChild(wait_message)
+    showWaitingMessage()
     historybox.scrollTop=historybox.scrollHeight;
     let url='/sendPrompt'
     let data={prompt:inputdata}
@@ -333,6 +331,43 @@ function displayTable(tableData){
         
     }
     
+
+}
+
+function showWaitingMessage(){
+    wait_message=document.createElement('p')
+    
+    wait_message.innerHTML='<span id="status">Processing</span><span id="progress" progress="0"></span>'
+    wait_message.className='chat received'
+    historybox.appendChild(wait_message)
+
+    let status=document.getElementById('status')
+    
+    setTimeout(()=>{
+        status.textContent='Fetching results'
+    },2000)
+
+    setTimeout(()=>{
+        status.textContent='Analysing results'
+    },4000)
+
+    let progressIncrement=setInterval(()=>{
+        let progress=document.getElementById('progress')
+        if(progress){
+            progress.progress+=1
+            progress.progress%=4
+            progress.textContent='.'.repeat(progress.progress)
+        }
+        else{
+            clearInterval(progressIncrement)
+        }
+    },500)
+
+
+
+
+
+
 
 }
 

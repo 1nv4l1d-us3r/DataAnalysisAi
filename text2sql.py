@@ -154,6 +154,7 @@ def chat_with_assistant(user_input):
 
 
     # Wait for the assistant to complete its response
+    runstart=time.time()
     while run.status != 'completed':
         print(run.status)
         time.sleep(0.5)
@@ -183,6 +184,8 @@ def chat_with_assistant(user_input):
                             'output':str(query_status)
                             }])
         
+    
+    print('run took',round(time.time()-runstart),'s')
     response={'messages':[]}
     if query_status==True:
         response['messages'].append({'type':'table','data':query_result})

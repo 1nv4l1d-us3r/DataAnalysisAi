@@ -310,11 +310,10 @@
             entered_prompt.className = 'chat sent';
             
             const wait_message = document.createElement('p');
-            wait_message.textContent = 'Waiting for response... ';
-            wait_message.className = 'chat received';
+           
             
             historybox.appendChild(entered_prompt);
-            historybox.appendChild(wait_message);
+            showWaitingMessage()
             historybox.scrollTop = historybox.scrollHeight;
             
             let url = '/sendPrompt';
@@ -466,6 +465,40 @@
             
         
         }
+
+    function showWaitingMessage(){
+    wait_message=document.createElement('p')
+    
+    wait_message.innerHTML='<span id="status">Processing</span><pre  style="display:inline" id="progress" progress=0></pre>'
+    wait_message.className='chat received'
+    historybox.appendChild(wait_message)
+
+    let status=document.getElementById('status')
+    
+    setTimeout(()=>{
+        status.textContent='Fetching results'
+    },3000)
+
+    setTimeout(()=>{
+        status.textContent='Analysing results'
+    },6000)
+
+    let progressIncrement=setInterval(()=>{
+        let progress=document.getElementById('progress')
+        if(progress){
+            let progresvalue=progress.getAttribute('progress')
+           
+            progresvalue=(progresvalue%4)+1
+            progress.setAttribute('progress',progresvalue)
+            
+            progress.textContent=`${'.'.repeat(progresvalue)}${' '.repeat(4-progresvalue)}` 
+        }
+        else{
+            clearInterval(progressIncrement)
+        }
+    },500)
+}
+
 
 
     </script>
