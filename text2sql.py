@@ -32,7 +32,7 @@ db_details={
 
 
 def execute_sql_query(query):
-    print('startign query execution')
+    print('starting query execution')
 
     illegal_query = bool(re.search(r'\b(INSERT|UPDATE|DELETE|MERGE)\b', query, re.IGNORECASE))
     if illegal_query:
@@ -41,8 +41,10 @@ def execute_sql_query(query):
     result=''
 
     try:
+        print('creating connection to snowflake')
+        connstart=time.time()
         conn = snowflake.connector.connect(**db_details)
-      
+        print('connection took',round(time.time()-connstart,2),'s')
         cursor = conn.cursor()
         cursor.execute(query)
         rows = cursor.fetchall()
@@ -216,7 +218,8 @@ def chat_with_assistant(user_input):
              print('Failed')
              print('error')
              print(run.last_error)
-             return {'type':'text','data':'Request could not be completed try again'}
+             response['messages'].append({'type':'text','data':'Request could not be completed try again'})
+             return response
 
         run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
 
@@ -291,12 +294,19 @@ client.beta.assistants.delete(assistant.id)
 
 app = FastAPI()
 
+
+import os
+
+# Get the directory where the current script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+
 class Prompt(BaseModel):
     text: str
 
 @app.get("/")
 async def read_root():
-    return FileResponse('./indexgpt.html')
+    return FileResponse(script_dir+'/indexgpt.html')
 
 
 @app.get("/newConversation")
