@@ -1,6 +1,8 @@
 from openai import OpenAI
-import mysql.connector
-from mysql.connector import Error
+from typing_extensions import override
+from openai import AssistantEventHandler
+from openai.types.beta.threads import Message,Text
+from openai.types.beta.threads.runs import ToolCall
 import snowflake.connector
 import time
 import json
@@ -30,6 +32,82 @@ db_details={
     }
 
 
+connection=None
+
+def getConnection():
+    global connection
+
+    if connection:
+        if not connection.is_closed():
+            return connection
+        
+    print('creating connection to snowflake')
+    connstart=time.time()
+    conn = snowflake.connector.connect(**db_details)
+    connection=conn
+    print('connection took',round(time.time()-connstart,2),'s')
+    return conn
+
+connection=getConnection()
+class EventHandler(AssistantEventHandler):
+
+
+    def __init__(self):
+        super().__init__()
+        self.messages = []
+    
+
+    def add_text_message(self,text):
+        self.messages.append({'type':'text','data':text})
+    
+    def add_table(self,table):
+        self.messages.append({'type':'table','data':table})
+
+    
+    @override
+    def on_text_done(self, text:Text):
+        self.add_text_message(text.value)
+    
+    @override
+    def on_run_failed(self, error):
+        self.add_text_message("could'nt complete your request run failed")
+
+    @override
+    def on_run_com(self):
+        print('run successfully complete')
+    @override
+    def on_tool_call_done(self,tool_call):
+        tool_outputs = []
+     
+            #for debugging
+        print('tool call initiated for ',tool_call.function.name)
+        
+        if tool_call.function.name=='execute_sql_query':
+            query=json.loads(tool_call.function.arguments)['query']
+            query_result,query_status=execute_sql_query(query)
+            if query_status==True:
+                #suppose to add table into messages
+                print('trying to add table to message')
+                self.add_table(query_result)
+
+            tool_outputs.append({"tool_call_id": tool_call.id, "output": str(query_status)})
+
+            self.submit_tool_outputs(tool_outputs)
+    
+
+
+    def submit_tool_outputs(self, tool_outputs):
+        print('submiting outputs to tool calls')
+      # Use the submit_tool_outputs_stream helper
+        with client.beta.threads.runs.submit_tool_outputs_stream(
+        thread_id=self.current_run.thread_id,
+        run_id=self.current_run.id,
+        tool_outputs=tool_outputs,
+      ) as stream:
+            stream.until_done()
+        print('done submiting')
+
+
 
 def execute_sql_query(query):
     print('starting query execution')
@@ -41,10 +119,7 @@ def execute_sql_query(query):
     result=''
 
     try:
-        print('creating connection to snowflake')
-        connstart=time.time()
-        conn = snowflake.connector.connect(**db_details)
-        print('connection took',round(time.time()-connstart,2),'s')
+        conn=getConnection()
         cursor = conn.cursor()
         cursor.execute(query)
         rows = cursor.fetchall()
@@ -66,7 +141,6 @@ def execute_sql_query(query):
         return 'error',Err
     finally:
         cursor.close()
-        conn.close()
         print('done querying')
 
 
@@ -176,22 +250,27 @@ assistant = client.beta.assistants.create(
                     if the returned result is an error or exception fix the error by rebuilding the query and call the execute_sql_query function again.
                     for a successful execution True is returned as result.
      
-                    after the sql query executed  an output is generated for a end user summarizing the details .
+                    after the sql query executed generate a summarization of output for a end user is generated explaining details of fetched data.
                     if you cannot provide the answer give sufficient reason to the user why the request couuld not be completed.
                     do not include sql statements in text response only send them using tool call with execute_sql_query 
                     if the response to question has points and lists format the text example using  bullet points.
 
       ''',
-    model="gpt-4o",
+    model="gpt-4o-mini",
     tools=[{"type": "function", "function": execute_sql_function}]
 )
 
 # Create a thread
 thread = client.beta.threads.create()
+run = client.beta.threads.runs.create(
+    thread_id=thread.id,
+    assistant_id=assistant.id
+)
+
+
 
 def chat_with_assistant(user_input):
-    query_status=None
-    query_result=None
+
     # Add a message to the thread
     client.beta.threads.messages.create(
         thread_id=thread.id,
@@ -200,68 +279,20 @@ def chat_with_assistant(user_input):
     )
 
     # Run the assistant
-    run = client.beta.threads.runs.create(
-        thread_id=thread.id,
-        assistant_id=assistant.id
-    )
+    myEventHandler=EventHandler()
 
+    runstart=time.time()
+    with client.beta.threads.runs.stream(
+        thread_id=thread.id,
+        assistant_id=assistant.id,
+        event_handler=myEventHandler,
+        ) as stream:
+        stream.until_done()
+    print('run took',round(time.time()-runstart),'s')
 
     # Wait for the assistant to complete its 
-    response={'messages':[]}
-    runstart=time.time()
-    while run.status != 'completed':
-        print(run.status)
-        time.sleep(0.5)
-
-
-        if run.status=='failed':
-             print('Failed')
-             print('error')
-             print(run.last_error)
-             response['messages'].append({'type':'text','data':'Request could not be completed try again'})
-             return response
-
-        run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
-
-        if run.status=='requires_action':
-
-            for tool_call in run.required_action.submit_tool_outputs.tool_calls:
-                print('tool call for',tool_call.function.name)
-                #submiting the query execution error or success to tool call
-                if tool_call.function.name=='execute_sql_query':
-                    query=json.loads(tool_call.function.arguments)['query']
-
-                    querytimer=time.time()
-                    query_result,query_status=execute_sql_query(query)
-                    print('db fetch time',round(time.time()-querytimer,2),'s')
-                    
-                    # for debugging queries passed to execution
-                    print(str(query_status))
-                    response['messages'].append({'type':'text','data':'query : '+query})
-
-                    client.beta.threads.runs.submit_tool_outputs(
-                        thread_id=thread.id,
-                        run_id=run.id,
-                        tool_outputs=[{
-                            'tool_call_id':tool_call.id,
-                            'output':str(query_status)
-                            }])
-        
-    
-    print('run took',round(time.time()-runstart),'s')
-    
-    if query_status==True:
-        response['messages'].append({'type':'table','data':query_result})
-    
-    # Retrieve the messages  for debugging
-    messages = client.beta.threads.messages.list(thread_id=thread.id)
-    if messages.data and (len(messages.data) > 0):
-        bot_response=messages.data[0].content[0].text.value
-        response['messages'].append({'type':'text','data':bot_response})
-    
-
-    # Return the assistant's response
-    #return messages.data[0].content[0].text.value
+    response={'messages':myEventHandler.messages}
+   
     return response
 
 
@@ -334,7 +365,10 @@ async def send_prompt(request: Request ):
         
             return {'messages':[text,table]}
         
-        response=chat_with_assistant(prompt)
+        try:
+            response=chat_with_assistant(prompt)
+        except Exception as e:
+            raise(e)
 
         return response
     except Exception as e:
