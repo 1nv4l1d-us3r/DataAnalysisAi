@@ -4,247 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinOps Analyzer</title>
-    <style>
-        body {
-            font-family: 'Inter', 'Söhne', 'Helvetica', 'Arial', sans-serif;
-            background-color: #f0f4f8;
-            color: #2d3748;
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-        }
-
-        .main {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            padding: 1rem;
-            box-sizing: border-box;
-        }
-
-        .logo {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin:1rem 0;
-            color: #4a5568;
-            text-align: center;
-        }
-
-        .content {
-            display: flex;
-            flex-grow: 1;
-            gap: 2rem;
-            overflow: hidden;
-            justify-content: center;
-            padding-bottom: 5px;
-        }
-        
-
-        .left-column {
-            display: flex;
-            flex-direction: column;
-            width: 60%;
-            transition: width 0.3s ease;
-        }
-
-        .content.table-visible .left-column {
-            width: 55%;
-        }
-
-        .history {
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            margin-bottom: 1rem;
-        }
-
-        .tableSection {
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 45%;
-            position: relative;
-            display: none;
-            flex-direction: column;
-        }
-
-        .tableHeader {
-            padding: 0.2rem;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-        }
-
-        .tableContent {
-            flex-grow: 1;
-            overflow-y: auto;
-
-        }
-
-        .tableFooter {
-            padding: 1rem;
-            border-top: 1px solid #e2e8f0;
- 
-           
-        }
-
-        .chat {
-            background-color: #edf2f7;
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1rem;
-            max-width: 80%;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .chat.sent {
-            align-self: flex-end;
-            background-color: #ebf8ff;
-        }
-
-        .chat.received {
-            align-self: flex-start;
-        }
-
-        .inputBox {
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 1rem;
-            display: flex;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        #promptForm {
-            display: flex;
-            width: 100%;
-        }
-
-        #promptInput {
-            flex-grow: 1;
-            border: none;
-            font-size: 1rem;
-            padding: 0.75rem 1rem;
-            background-color: #edf2f7;
-            border-radius: 8px;
-        }
-
-        #promptInput:focus {
-            outline: none;
-            box-shadow: 0 0 0 2px #63b3ed;
-        }
-
-        #promptBtn {
-            background-color: #4299e1;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0.75rem 1rem;
-            margin-left: 0.5rem;
-            color: #ffffff;
-            transition: background-color 0.3s ease;
-        }
-
-        #promptBtn:hover {
-            background-color: #3182ce;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        thead {
-            position: sticky;
-            top: 0;
-            background-color: #ffffff;
-            z-index: 1;
-        }
-
-        th {
-            background-color: #edf2f7;
-            font-weight: 600;
-        }
-
-        .attachment {
-            display: flex;
-            align-items: center;
-            background-color: rgb(237, 242, 247);
-            border-radius: 6px;
-            padding: 0.5rem 0.5rem;
-            cursor: pointer;
-            border:1px solid grey;
-            transition: background-color 0.3s ease;
-            gap:0.7em;
-        }
-
-        .attachment:hover {
-            border:1px solid rgb(145, 144, 144);
-            background-color:rgb(228, 231, 235);
-        }
-        .attachment p{
-            margin:0 5px;
-            font-size:1.125em;
-            line-height:0.7rem;
-        }
-
-        .attachment svg {
-            width: 25px;
-            height: auto;
- 
-        }
-        .attachment div{
-            border-left: 1px solid grey;
-            padding-left:0.7em;
-        }
-
-        .closeBtn {
-            background-color: #ffffff;
-            border: none;
-            border-radius: 50%;
-            width: 2rem;
-            height: 2rem;
-            cursor: pointer;
-            font-size: 1.25rem;
-            transition: background-color 0.3s ease;
-        }
-
-        .closeBtn:hover {
-            background-color: #e2e8f0;
-        }
-
-        @media (max-width: 1200px) {
-            .content, .content.table-visible {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .left-column, .content.table-visible .left-column, .tableSection {
-                width: 100%;
-            }
-
-            .history {
-                max-height: 50vh;
-             
-            }
-
-            .tableSection {
-                margin-top: 1rem;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/resources/style.css">
 </head>
 <body>
     <div class="main">
@@ -339,7 +99,7 @@
 
         function handleResponse(response) {
             inputform.disabled = false;
-            historybox.removeChild(historybox.lastChild);
+            hideWaitingMessage()
             const responseHasTable = response.messages.some((res) => res.type === 'table');
             let currentTableIndex = storedTables.length;
 
@@ -466,8 +226,15 @@
         
         }
 
+    function hideWaitingMessage(){
+        wait_message=document.getElementById('wait_message')
+        if(wait_message)
+            wait_message.remove()
+    }   
+
     function showWaitingMessage(){
     wait_message=document.createElement('p')
+    wait_message.id='wait_message'
     
     wait_message.innerHTML='<span id="status">Processing</span><pre  style="display:inline" id="progress" progress=0></pre>'
     wait_message.className='chat received'

@@ -8,6 +8,7 @@ import time
 import json
 from fastapi import FastAPI, HTTPException, Query, Form,Request
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
 import re
@@ -334,6 +335,8 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 
 class Prompt(BaseModel):
     text: str
+
+app.mount("/resources", StaticFiles(directory=script_dir+"/resources"), name="resources")
 
 @app.get("/")
 async def read_root():
