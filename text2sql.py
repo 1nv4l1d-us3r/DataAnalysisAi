@@ -1,11 +1,9 @@
-import time
 from fastapi import FastAPI, HTTPException,Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
 from essentials import create_new_thread,chat_with_assistant
-from essentials import client,thread
 
 
 app = FastAPI()
