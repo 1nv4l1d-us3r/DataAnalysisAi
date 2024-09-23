@@ -1,80 +1,135 @@
 
+from openai import AssistantEventHandler
+from openai.types.beta.threads import Message,Text
+from typing_extensions import override
+import json
+from datetime import datetime
+
+currentDate=str(datetime.now())
+
+class EventHandler(AssistantEventHandler):
 
 
-tables_info=''' 
 
-Table name: AWS_CUR - stores the aws cur data
+    def __init__(self,client):
+        super().__init__()
+        self.client=client
+        self.messages = []
+        self.tool_outputs = []
 
-columns:
-    lineItem/UsageStartDate - The start date and time when the resource usage occurred. category group - Time
-    lineItem/UsageAccountId - The account ID associated with the usage. category group - Global
-    lineItem/ResourceId - The unique identifier for the AWS resource used. category group - Resource
-    product/region - The AWS region where the resource is hosted. category group - Location
-    product/productFamily - The broad product category that the resource belongs to. category group - Product
-    lineItem/ProductCode - The specific AWS product or service being used. category group - Product
-    product/servicecode - The service code for the AWS product. category group - Service
-    product/instanceFamily - The type of compute instance (e.g., general purpose, compute-optimized). category group - Resource
-    product/instanceType - The specific instance type for the compute resource (e.g. r5.2xlarge, t2.micro) category group - Resource
-    product/tenancy - Specifies whether the resource runs on shared or dedicated infrastructure. category group - Product
-    product/storageType - The type of storage used by the resource (e.g., SSD, HDD). category group - Product
-    product/volumeType - The specific volume type for the storage resource. category group - Product
-    product/accessType - The type of access associated with the resource (e.g., public or private). category group - Product
-    product/databaseEngine - The database engine being used (e.g., MySQL, PostgreSQL). category group - Product
-    product/engineCode - The code representing the database engine. category group - Product
-    product/deploymentOption - The deployment model used (e.g., on-demand, reserved). category group - Product
-    product/transferType - The type of data transfer involved (e.g., inbound, outbound). category group - Product
-    product/datatransferout - The amount of data transferred out of AWS services. category group - Product
-    product/currentGeneration - Indicates if the resource is part of the latest generation of AWS services. category group - Product
-    product/inferenceType - The type of inference (e.g., for machine learning workloads). category group - Product
-    product/training - Specifies if the resource is used for training machine learning models. category group - Product
-    product/computeFamily - The compute category or family the resource belongs to. category group - Product
-    lineItem/UsageType - The type of usage measured (e.g., instance-hours, GB transferred). category group - Product
-    pricing/unit - The unit of measure used for pricing (e.g., per hour, per GB). category group - Product
-    lineItem/Operation - The specific AWS operation or service action being billed. category group - Service
-    lineItem/UnblendedCost - The actual cost of the resource usage without any discounts or savings applied. category group - Cost
-    lineItem/NetUnblendedCost - The cost of the resource usage after applying credits, refunds, or adjustments. category group - Cost
-    discount/TotalDiscount - The total discount amount applied to the resource cost. category group - Cost
-    lineItem/UsageAmount - The total quantity of resource usage, measured in units such as hours, GB, or instance-hours. category group - Usage
-    reservation/EffectiveCost - The cost of usage covered by a reserved instance, reflecting the discounted rate applied to the usage. For example, if you have reserved an EC2 instance and used it for 10 hours, this field shows the discounted price for those 10 hours as compared to the on-demand price. category group - Commitment
-    reservation/NetEffectiveCost - The net cost of usage after applying the reserved instance discount and accounting for any unused reserved capacity. For example, if you reserved an instance for the whole month but only used it for 20 days, this field shows the cost after subtracting the savings from the unused 10 days category group - Commitment
-    reservation/UnusedQuantity - The quantity of reserved instance capacity that was unused during the billing period. category group - Commitment
-    reservation/UnusedRecurringFee - The recurring fee associated with unused reserved instance capacity, typically charged despite non-usage. category group - Commitment
-    savingsPlan/SavingsPlanEffectiveCost - The cost of the resource usage that is covered by an AWS savings plan. category group - Commitment
-    savingsPlan/NetSavingsPlanEffectiveCost - The net cost of the resource usage after applying savings from an AWS savings plan. category group - Commitment
+    def add_text_message(self,text):
+        self.messages.append({'type':'text','data':text})
+    
+    def add_table(self,table):
+        self.messages.append({'type':'table','data':table})
+
+    
+    @override
+    def on_text_done(self, text:Text):
+        self.add_text_message(text.value)
+    
+    @override
+    def on_run_failed(self, error):
+        self.add_text_message("could'nt complete your request run failed")
+
+    @override
+    def on_run_done(self):
+        print('run successfully complete')
 
     
 
-    additional derived fields that can you can add using existing AWS_CUR table fields:
-    Billing Month - The month during which the usage is billed. category group - Time
-    Perspective - A customized view or categorization of costs and usage based on specific business logic. category group - Global
-    Product Category - Higher level product categorization based on  grouping products into broader categories. category group - Product
-    Service Category - Higher level service categorization based on grouping related services. category group - Service
-    Tags - Standardized tags for better categorization and tracking of resources, created using ML Model. category group - Resource
-    Uses Reservation - Derived field based on whether the resource is utilizing a reserved instance or not. category group - Resource
-    Uses SavingsPlan - Derived field indicating if a resource is covered under a savings plan. category group - Resource
-    product/instanceTypeFamily - Classification of instance types based on the family grouping, derived from instance type logic. category group - Resource
-    
-    the additional derived fields are not present in the table they mush be dynamically inserted if the user asks for them.
+        
+ 
+    @override
+    def on_tool_call_done(self,tool_call):
+
+        #for debugging 
+        print('tool call done for ',tool_call.function.name)
+        
+        if tool_call.function.name=='display_widget':
+            arguments=json.loads(tool_call.function.arguments)
+            widget_id=arguments['widget_id']
+            params=arguments['params']
+            message=f"widget id {widget_id} \n arguments: {json.dumps(params)}"
+            self.add_text_message(message)
+            self.tool_outputs.append({"tool_call_id": tool_call.id, "output": "True"})
+        
+    def submit_tool_outputs(self ):
+        print('submiting outputs to tool calls')
+      # Use the submit_tool_outputs_stream helper
+        with self.client.beta.threads.runs.submit_tool_outputs_stream(
+        thread_id=self.current_run.thread_id,
+        run_id=self.current_run.id,
+        tool_outputs=self.tool_outputs,
+      ) as stream:
+            stream.until_done()
+        self.tool_outputs=[]
+        print('done submiting')
 
 
-'''
 
 
-execute_sql_function = {
-    "name": "execute_sql_query",
-    "description": "Execute a SQL query on MySQL database and returns true if query executed sucessfully else on error returns the error statement",
+
+
+
+
+display_widget_function1 = {
+    "name": "display_widget",
+    "description": "Displays a widget based on the widget_id and a dictionary of parameters for customization.",
     "parameters": {
         "type": "object",
         "properties": {
-            "query": {
+            "widget_id": {
                 "type": "string",
-                "description": "The SQL query to execute"
+                "description": "The ID of the widget to display"
+            },
+            "parameters": {
+                "type": "object",
+                "description": "A dictionary containing key-value pairs for widget customization",
+                "additionalProperties": {
+                    "type": "string",
+                    "description": "Custom parameters for the widget"
+                }
             }
         },
-        "required": ["query"]
-        
+        "required": ["widget_id", "parameters"]
     }
 }
+
+
+display_widget_function = {
+    "name": "display_widget",
+    "description": "Displays a widget based on the widget_id and a list of customization parameters.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "widget_id": {
+                "type": "string",
+                "description": "The unique identifier of the widget to display."
+            },
+            "params": {
+                "type": "array",
+                "description": "A list of customization parameters, where each item is an object containing a key-value pair.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The key representing the customization option (e.g., 'month', 'type')."
+                        },
+                        "value": {
+                            "type": "string",
+                            "description": "The value for the corresponding customization option."
+                        }
+                    },
+                    "required": ["key", "value"]
+                }
+            }
+        },
+        "required": ["widget_id", "params"]
+    }
+}
+
 
 
 
@@ -83,39 +138,34 @@ execute_sql_function = {
 def createChatAssistant(client):
 
     assistant = client.beta.assistants.create(
-        name="text to sql bot",
-        instructions=f'''You are Fi a AWS cur expert which helps answer Finops queries like cost and effeciency of environment.
-                        your task is to help users analyze their cloud infrastructure cost,effeciency and usage statistics.
-                        you help the user in fetching relevant information from the snowflake database to assist them in finding information and insights that they want .
-                        the details of tables is as follows {tables_info}.
-                        
-                        
-                        the SQL query must not include statements such as INSERT,DELETE,UPDATE,TRUNCATE,DROP,ALTER. 
-                        Pay close attention to the filtering criteria mentioned in the question and incorporate them using the WHERE clause in your SQL query
-                        do not create SQL queries that modify the data.
-                        if the question asks very few details include a few relevant fields or information appropriately to match their requirements.
-                        use dynamic values for current date.
-                        Unless explicitly specified do not include more than 15 rows while fetching data.
-                        never fetch more than 1000 rows. 
-                        use user friendly aliases for the column names
-                        you must create sytatically correct snowflake sql queries to answer the user questions.
-                        if a field has special characters enclose it in double quotes when building the query.
-                        create queries using the tables information prvided to fulfill the questions asked.
-                        you can use all information to answer the queries
-                        you have to include only the fieild that are required for the question do not include unnecessary fields.
-                        to answer the questions asked by user sql query must be created and execute_sql_query function must be called.
-                        
-                        if a correct SQL query is generated then the execute_sql_query function must be called with the sql statemet as a parameter,
-                        if the returned result is an error or exception fix the error by rebuilding the query and call the execute_sql_query function again.
-                        for a successful execution True is returned as result.
-        
-                        after the sql query executed generate a summarization of output for a end user is generated explaining details of fetched data.
-                        if you cannot provide the answer give sufficient reason to the user why the request couuld not be completed.
-                        do not include sql statements in text response only send them using tool call with execute_sql_query 
-                        if the response to question has points and lists format the text example using  bullet points.
+        name="Data Visualizaion Ai",
+        instructions=f'''Your name is Fi, you are a Ai that will help users fetch details and gain insights about their cloud services their cost and usage.
+                        based on the user input. you will display different insights using widgets.
+                        in the starting of the conversation no widgest will be available.
+                        if no widgets are available you must ask the user what insights he wants to see.
+                        based on to user input determine the insights visualization widgets to be displayed.
+                        the widgets have optional and required parameters. 
+                        make sure that all the required parameter's values are filled based on the user inputs.
+                        if any parameter has not been determines ask the user to enter value for the specific parameter 
+                        do not bother the user to provide parameters values in formatted manner.
+                        you can only ask the user to enter details in human friendly and natural language.
+                        you are responsible for formating the parametrs in proper form.
+                        you need to decide which widget needs to be added based on the descripton of widget and what information the user requires.
+                        you must ask the user for details in a user friendly manner.
+                        you must format the data according to requirements if not in proper format.
+                        you can add widgets which i might have suggested before if they match the user requirements.
+
+                        after asking all values for parameters you must call the display_widget tool call to dispay the paticular insights widget to user.
+                        on a success full tool call True will be returned.
+                        you can display up to 2 widgets for each user query.
+
+                        do not reveal widget information to the user.
+                        you help in understanding costs,usages and getting insights
+                        todays date is {currentDate}
+
 
         ''',
         model="gpt-4o-mini",
-        tools=[{"type": "function", "function": execute_sql_function}]
+        tools=[{"type": "function", "function": display_widget_function}]
     )
     return assistant
