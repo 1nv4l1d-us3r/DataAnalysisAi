@@ -17,6 +17,7 @@ class EventHandler(AssistantEventHandler):
     def __init__(self):
         super().__init__()
         self.messages = []
+        self.tool_outputs=[]
     
 
     def add_text_message(self,text):
@@ -34,39 +35,46 @@ class EventHandler(AssistantEventHandler):
     def on_run_failed(self, error):
         self.add_text_message("could'nt complete your request run failed")
 
-    @override
-    def on_run_com(self):
-        print('run successfully complete')
+    def on_event(self,event):
+        if event.event=='thread.run.requires_action':
+           self.handle_tool_calls(event.data)
+        if event.event=='thread.run.completed':
+            run=event.data
+            usage=run.usage
+            print('assistant usage',usage.total_tokens,usage.prompt_tokens,usage.completion_tokens)
+
 
     @override
-    def on_tool_call_done(self,tool_call):
-        tool_outputs = []
-     
-            #for debugging
-        print('tool call initiated for ',tool_call.function.name)
+    def handle_tool_calls(self,data):
+
         
-        if tool_call.function.name=='execute_sql_query':
-            query=json.loads(tool_call.function.arguments)['query']
-            query_result,query_status=execute_sql_query(query)
-            if query_status==True:
-                #suppose to add table into messages
-                print('tryiassistantng to add table to message')
-                self.add_table(query_result)
+          
 
-            tool_outputs.append({"tool_call_id": tool_call.id, "output": str(query_status)})
+        for tool in data.required_action.submit_tool_outputs.tool_calls:
+            print('tool call initiated for ',tool.function.name)
+            if tool.function.name=='execute_sql_query':
+                query=json.loads(tool.function.arguments)['query']
+                query_result,query_status=execute_sql_query(query)
+                if query_status==True:
+                    #suppose to add table into messages
+                    print('trying to add table to message')
+                    self.add_table(query_result)
 
-            self.submit_tool_outputs(tool_outputs)
-    
+                self.tool_outputs.append({"tool_call_id": tool.id, "output": str(query_status)})
 
-    def submit_tool_outputs(self, tool_outputs):
+        self.submit_tool_outputs(data.id)
+        
+
+    def submit_tool_outputs(self,run_id):
         print('submiting outputs to tool calls')
       # Use the submit_tool_outputs_stream helper
         with client.beta.threads.runs.submit_tool_outputs_stream(
         thread_id=self.current_run.thread_id,
-        run_id=self.current_run.id,
-        tool_outputs=tool_outputs,
+        run_id=run_id,
+        tool_outputs=self.tool_outputs,
       ) as stream:
             stream.until_done()
+        self.tool_outputs=[]
         print('done submiting')
 
 
