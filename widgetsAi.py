@@ -25,69 +25,30 @@ model = ChatOpenAI(model="gpt-4o-mini")
 
 
 
-rules='''i have few templates which have characteristics as keywords.
-        you have to give me a list of keywords that match the requirements of user input.
-        include all the possible keywords which satisfy user requirements.
-        include even remotely related keywords.
-        following are the possible keywords:
-        "12 months"
-        "anomaly"
-        "by business units"
-        "by services"
-        "Commitments"
-        "committed services"
-        "cost"
-        "cost can be saved"
-        "cost decrease"
-        "cost increase"
-        "cost saved"
-        "cost Savings"
-        "current month"
-        "current month spending"
-        "specific start and end month or date"
-        "Decrease"
-        "forecast spending"
-        "for services"
-        "increase"
-        "increase in costs"
-        "Jira"
-        "last 12 months"
-        "last 12 months cost"
-        "last month cost"
-        "last month spending"
-        "last month usage"
-        "month cost"
-        "monthly"
-        "oversees anomaly"
-        "potential cost savings"
-        "Radar"
-        "radar cost decrease"
-        "radar cost increase"
-        "realized savings"
-        "Real or actual cost saving"
-        "Real or actual cost saving-month"
-        "RI"'modifiedWidgets.json'
-        "SP Fee"
-        "spikes"
-        "Spikes"
-        "sudden"
-        "sudden cost decrease"
-        "sudden cost increase"
-        "support fee"
-        "tickets"
-        "total"
-        "Total cost for Specific month"
-        "Total Usage"
-        "Total usage for Specific month"
-        "uncovered services"
-        "usage"
-        "usage charge"
-        "yearly"
-print(result)
-    {{
-    "keywords": ["keyword1", "keyword2", ...]
-    }}
-    if no keywords match return a empty keywords array.
+rules='''i have few templates which are to be displayed based on the user input.
+        you have to give me a list of template ids that match the requirements of user input.
+        you have to select the template based on how well the description meets the user input.
+        include all the possible templates which satisfy user requirements.
+        id - description
+        1 - "provides total cost spent for a given month based on 'Usage Charges', 'SP Fee', 'RI Fee' and 'Support Fee' and compares it with previous month. Implements bar graph for visualization"
+        2 - "Describes the cloud usage for the given month and compares it with the previous month."
+        3 - "describes total cost spent for a given 12 months period on 'Usage Charges', 'SP Fee', 'RI Fee' and 'Support Fee'. This date or months can be from YYYYMM to YYYYMM . This can have range of months or dates. Implements bar graph for visualization"
+        4 - "Gives only an overview. Radar is like an invigilator, oversees anomaly, spikes, and activities which may result in sudden increase or decrease in cost"
+        5 - "Radar is like an invigilator, oversees anomaly, spikes, and activities which may result in sudden increase in cost. This widget is specific to cost increase."
+        6 - "Radar is like an invigilator, oversees anomaly, spikes, and activities which may result in sudden decrease in cost. This widget is specific to cost decrease."
+        7 - "Gives a brief overview for rightsizing opportunities which refers to identifying potential areas where the company can adjust its resources to save on cost. Gives information for how much cost can be saved, yearly and monthly based on services and business units. Fetches rightsizing data for various services and implements bar chart for visualization."
+        8 - "Describes the potential savings due to rightsizing opportunities. Gives month wise as well as year wise insights based on services"
+        9 - "Track the details of Jira tickets. Implements pie chart for visualization"
+        10 - "Realized savings refer to the actual, measurable cost reductions that a company has successfully achieved. Fetches realized savings data for various services for a given month"
+        11 - "Realized savings refer to the actual, measurable cost reductions that a company has successfully achieved.This date or months can be from YYYYMM to YYYYMM.This can have range of months or dates. Fetches realized savings data for various services for the last 12 months"
+        12 - "Describes total cost spent for current month, has three attributes: 'spend till date', 'last month spending', 'forecast spending'. Implements line chart for visualization "
+        13 - "Gives information about committed services under SP, RI and also uncovered services. Implements pie chart for visualization"
+
+    output format:
+
+    [templateid1,templateid2, ....]
+
+    if ther is no template that matches the user input return a empty array.
     '''
 
 input_template=''' 
@@ -106,21 +67,16 @@ gpt=prompt_template|model|json_parser
 
 
 def getWidgetIds(prompt):
-    ids=set()
+    widgetlist=[]
     try:
-
         # for debugging .. remove cb if wanted
         with get_openai_callback() as cb:
             response=gpt.invoke({'user_input':prompt})
         print('widget selection token-costs',cb.total_tokens,cb.prompt_tokens,cb.completion_tokens)
-        keywords_list=response['keywords']
-        for keyword in keywords_list:
-            for obj in modwidgets:
-                if keyword in obj['keywords']:
-                    ids.add(obj['id'])
+        widgetlist=response
     except Exception as e:
         print('error',e)
-    return list(ids)
+    return list(widgetlist)
 
 if __name__=='__main__':
     userinput=input('Enter prompt')
