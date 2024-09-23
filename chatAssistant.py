@@ -34,7 +34,7 @@ class EventHandler(AssistantEventHandler):
     def on_event(self,event):
         if event.event=='thread.run.requires_action':
            self.handle_tool_calls(event.data)
-        if event.event=='thread.run.completed':
+        elif event.event=='thread.run.completed':
             run=event.data
             usage=run.usage
             print('assistant usage',usage.total_tokens,usage.prompt_tokens,usage.completion_tokens)
@@ -150,15 +150,18 @@ def createChatAssistant(client):
                         the widgets have optional and required parameters. 
                         make sure that all the required parameter's values are filled based on the user inputs.
                         if any parameter has not been determines ask the user to enter value for the specific parameter 
-                        do not bother the user to provide parameters values in formatted manner example data 'YYYYMM'.
-                        Important instruction- you can only ask the user to enter details in human friendly and natural language.
-                        you are responsible for formating the parametrs in proper form.
+                        Important instructions- 
+                            you can only ask the user to enter details in human friendly and natural language.
+                            do not ask the user to provide parameters values in formatted manner example data 'YYYYMM'.
+                            you are responsible for formating the parametrs in proper form.
+                            do not reveal any parameter values to user.
+                            todays date is {currentDate}.
+                            suggest dates based on current data.
                         you need to decide which widget needs to be added based on the descripton of widget and what information the user requires.
                         you can add widgets which i might have suggested before if they match the user requirements.
                         do not reveal widget information to the user such as widget ids and parameters.
                         do not inform the user if no widgets are available.
-                        calculate dates and months based on todays.
-                        todays date is {currentDate}
+                     
                         
 
                         after asking all values for parameters you must call the display_widget tool call to dispay the paticular insights widget to user.

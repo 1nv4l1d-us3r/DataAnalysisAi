@@ -25,31 +25,26 @@ model = ChatOpenAI(model="gpt-4o-mini")
 
 
 
-rules='''i have few templates which are to be displayed based on the user input.
-        you have to give me a list of template ids that match the requirements of user input.
-        you have to select the template based on how well the description meets the user input.
-        include all the possible templates which satisfy user requirements.
-        id - description
-        1 - "provides total cost spent for a given month based on 'Usage Charges', 'SP Fee', 'RI Fee' and 'Support Fee' and compares it with previous month. Implements bar graph for visualization"
-        2 - "Describes the cloud usage for the given month and compares it with the previous month."
-        3 - "describes total cost spent for a given 12 months period on 'Usage Charges', 'SP Fee', 'RI Fee' and 'Support Fee'. This date or months can be from YYYYMM to YYYYMM . This can have range of months or dates. Implements bar graph for visualization"
-        4 - "Gives only an overview. Radar is like an invigilator, oversees anomaly, spikes, and activities which may result in sudden increase or decrease in cost"
-        5 - "Radar is like an invigilator, oversees anomaly, spikes, and activities which may result in sudden increase in cost. This widget is specific to cost increase."
-        6 - "Radar is like an invigilator, oversees anomaly, spikes, and activities which may result in sudden decrease in cost. This widget is specific to cost decrease."
-        7 - "Gives a brief overview for rightsizing opportunities which refers to identifying potential areas where the company can adjust its resources to save on cost. Gives information for how much cost can be saved, yearly and monthly based on services and business units. Fetches rightsizing data for various services and implements bar chart for visualization."
-        8 - "Describes the potential savings due to rightsizing opportunities. Gives month wise as well as year wise insights based on services"
-        9 - "Track the details of Jira tickets. Implements pie chart for visualization"
-        10 - "Realized savings refer to the actual, measurable cost reductions that a company has successfully achieved. Fetches realized savings data for various services for a given month"
-        11 - "Realized savings refer to the actual, measurable cost reductions that a company has successfully achieved.This date or months can be from YYYYMM to YYYYMM.This can have range of months or dates. Fetches realized savings data for various services for the last 12 months"
-        12 - "Describes total cost spent for current month, has three attributes: 'spend till date', 'last month spending', 'forecast spending'. Implements line chart for visualization "
-        13 - "Gives information about committed services under SP, RI and also uncovered services. Implements pie chart for visualization"
+rules='''
+i have few templates which are used to show cloud services stats to the user.
+they must be displayed based on the query asked by the user.
+you must select all the tages that are relevent to user query
+include all the possible tags which satisfy user query including remotely related tags.
 
-    output format:
+following are the tags:
+    commitments - related to  services the user is commited to  
+    cost - related operation cost and spedings on services
+    jira - shows info on projects and pending tickets
+    radar - realated to  spikes, sudden surges and anomalies in usage to cloud servies
+    righsizing - shows the opportunities of right sizing cloud servies
+    savings - potential cost savings for user
+    usage - show usage statistics of cloud services to user
 
-    [templateid1,templateid2, ....]
+output format:
+    ["tag1","tag2",...]
 
-    if ther is no template that matches the user input return a empty array.
-    '''
+if ther is no template that matches the user input return a empty array.
+'''
 
 input_template=''' 
 User Input:
@@ -67,17 +62,35 @@ gpt=prompt_template|model|json_parser
 
 
 def getWidgetIds(prompt):
-    widgetlist=[]
+    selectedTags=[]
+    widgetIds=set()
     try:
         # for debugging .. remove cb if wanted
         with get_openai_callback() as cb:
-            response=gpt.invoke({'user_input':prompt})
+            selectedTags=gpt.invoke({'user_input':prompt})
         print('widget selection token-costs',cb.total_tokens,cb.prompt_tokens,cb.completion_tokens)
-        widgetlist=response
+        for widget in modwidgets:
+            if widget['tag'] in selectedTags:
+                widgetIds.add(widget['id'])
     except Exception as e:
         print('error',e)
-    return list(widgetlist)
+    return list(widgetIds)
+
+
+
+def getWidgetTags(prompt):
+    selectedTags=[]
+    try:
+        # for debugging .. remove cb if wanted
+        with get_openai_callback() as cb:
+            selectedTags=gpt.invoke({'user_input':prompt})
+        print('widget selection token-costs',cb.total_tokens,cb.prompt_tokens,cb.completion_tokens)
+        
+    except Exception as e:
+        print('error',e)
+    return list(selectedTags)
+
 
 if __name__=='__main__':
-    userinput=input('Enter prompt')
-    print(getWidgetIds(userinput))
+    userinput=input('Enter prompt\n')
+    print(getWidgetTags(userinput))
